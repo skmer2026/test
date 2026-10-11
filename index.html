@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>搞钱人格与财富自由捷径测试</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <!-- 引入 Supabase SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body { background-color: #f3f4f6; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; -webkit-tap-highlight-color: transparent; }
+        .app-container { max-width: 480px; margin: 0 auto; min-height: 100vh; background: white; box-shadow: 0 10px 25px rgba(0,0,0,0.1); position: relative; overflow-x: hidden; }
+        .fade-in { animation: fadeIn 0.3s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        #app-title { touch-action: manipulation; }
+    </style>
+</head>
+<body>
+
+<div id="app" class="app-container">
+    <!-- 1. 密码页 -->
+    <div id="screen-password" class="flex flex-col items-center justify-center min-h-screen p-6 bg-gradient-to-b from-orange-50 to-white">
+        <div class="text-6xl mb-6">💰</div>
+        <h1 id="app-title" class="text-2xl font-bold text-gray-800 mb-2">搞钱人格测试</h1>
+        <p class="text-gray-500 mb-8 text-sm">请输入专属测试密码开始（每个密码限测3次）</p>
+        <div class="w-full space-y-4">
+            <input type="password" id="password-input" placeholder="请输入密码 (如 GQ-XXXX-XXX)" class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-500 text-center text-lg tracking-widest">
+            <p id="password-error" class="text-red-500 text-sm text-center hidden"></p>
+            <button onclick="handleLogin()" id="btn-login" class="w-full bg-orange-500 text-white py-3 rounded-xl font-bold shadow-lg shadow-orange-200 active:scale-95 transition-transform">开始测评</button>
+        </div>
+    </div>
+
+    <!-- 2. 答题页 -->
+    <div id="screen-quiz" class="hidden flex flex-col h-screen">
+        <div class="p-4 bg-white border-b border-gray-100">
+            <div class="flex items-center justify-between mb-2">
+                <span id="progress-text" class="text-sm text-gray-400">进度 1 / 24</span>
+                <span id="progress-percent" class="text-sm font-medium text-orange-500">4%</span>
+            </div>
+            <div class="w-full bg-gray-100 rounded-full h-2">
+                <div id="progress-bar" class="bg-orange-500 h-2 rounded-full transition-all duration-300" style="width: 4%"></div>
+            </div>
+        </div>
+        <div class="flex-1 p-6 overflow-y-auto fade-in" id="question-container"></div>
+        <div class="p-4 bg-white border-t border-gray-100 flex justify-between">
+            <button onclick="prevQuestion()" id="btn-prev" class="flex items-center px-4 py-3 rounded-xl font-medium text-gray-600 bg-gray-50">上一题</button>
+            <button onclick="nextQuestion()" id="btn-next" class="px-8 py-3 rounded-xl font-bold text-white bg-gray-300 shadow-none transition-all" disabled>下一题</button>
+        </div>
+    </div>
+
+    <!-- 3. 结果页 -->
+    <div id="screen-result" class="hidden min-h-screen bg-gray-50 pb-20 fade-in">
+        <div class="p-4">
+            <div id="result-card" class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                <div class="text-center mb-6">
+                    <div id="result-emoji" class="text-6xl mb-4"></div>
+                    <h1 id="result-title" class="text-2xl font-black text-gray-800 mb-2"></h1>
+                    <p class="text-sm text-gray-400">你的搞钱人格诊断书</p>
+                </div>
+                <div class="space-y-4">
+                    <div class="bg-orange-50 p-4 rounded-xl">
+                        <h3 class="text-orange-800 font-bold mb-1">🧬 人格画像</h3>
+                        <p id="result-desc" class="text-orange-700 text-sm leading-relaxed"></p>
+                    </div>
+                    <div class="bg-red-50 p-4 rounded-xl">
+                        <h3 class="text-red-800 font-bold mb-1">⚠️ 财富盲区</h3>
+                        <p id="result-blind" class="text-red-700 text-sm leading-relaxed"></p>
+                    </div>
+                    <div class="bg-green-50 p-4 rounded-xl">
+                        <h3 class="text-green-800 font-bold mb-1">💊 搞钱解药</h3>
+                        <p id="result-cure" class="text-green-700 text-sm leading-relaxed"></p>
+                    </div>
+                    <div class="bg-gray-800 p-4 rounded-xl text-center">
+                        <p id="result-quote" class="text-white text-sm italic"></p>
+                    </div>
+                </div>
+            </div>
+            <div class="mt-6 space-y-3">
+                <button onclick="saveImage()" class="w-full bg-gray-800 text-white py-3 rounded-xl font-bold flex items-center justify-center shadow-lg active:scale-95 transition-transform">📥 保存为长图</button>
+                <div class="flex gap-3">
+                    <button onclick="copyLink()" id="btn-copy" class="flex-1 bg-white border border-gray-200 text-gray-700 py-3 rounded-xl font-bold flex items-center justify-center active:scale-95 transition-transform">🔗 复制分享链接</button>
+                    <button onclick="restartQuiz()" class="flex-1 bg-white border border-gray-200 text-gray-700 py-3 rounded-xl font-bold flex items-center justify-center active:scale-95 transition-transform">🔄 再测一次</button>
+                </div>
+                <button onclick="showReview()" class="w-full bg-orange-500 text-white py-3 rounded-xl font-bold flex items-center justify-center shadow-lg shadow-orange-200 active:scale-95 transition-transform mt-4">👍 好评有礼</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 好评弹窗 -->
+<div id="modal-review" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+    <div class="bg-white w-full max-w-sm rounded-2xl p-6 relative fade-in">
+        <button onclick="hideReview()" class="absolute top-4 right-4 text-gray-400 font-bold text-xl">✕</button>
+        <div class="text-center">
+            <div class="text-4xl mb-4">🎁</div>
+            <h3 class="text-xl font-bold text-gray-800 mb-2">好评有礼</h3>
+            <p class="text-gray-500 text-sm mb-6 leading-relaxed">感谢你的体验！<br>请给店铺一个好评，截图发送给客服，<br>即可获得 <span class="text-orange-500 font-bold">1 元返现</span> 红包！</p>
+            <button onclick="hideReview()" class="w-full bg-orange-500 text-white py-2 rounded-xl font-bold">我知道了</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // ================= Supabase 配置 =================
+    // 请在这里填入你的 Supabase 项目 URL 和 anon key
+    const SUPABASE_URL = 'YOUR_SUPABASE_URL'; 
+    const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY'; 
+    
+    // 初始化 Supabase 客户端
+    const supabaseClient = (SUPABASE_URL !== 'YOUR_SUPABASE_URL') 
+        ? supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) 
+        : null;
+
+    // ================= 数据配置 =================
+    const questions = [
+        { id: 1, text: "路过彩票店，你的内心戏是？", options: [{text:"智商税，这钱不如买杯奶茶",score:0},{text:"花两块钱买注双色球，给生活买个希望",score:1},{text:"刮刮乐搞起，我就是天选之子",score:2},{text:"研究星座运势/塔罗牌，算算我今天的财运方位",score:3}]},
+        { id: 2, text: "如果突然暴富500万，你的第一反应是？", options: [{text:"存银行吃利息，立刻辞职回老家考公",score:0},{text:"还清房贷，剩下的慢慢花",score:1},{text:"拿出一半去投资，钱生钱",score:2},{text:"先买套豪宅和跑车，朋友圈先发个定位",score:3}]},
+        { id: 3, text: "深夜躺在床上，你脑海中最常出现的暴富画面是？", options: [{text:"没想过，早点睡明天还要打工",score:0},{text:"买的彩票/虚拟币突然暴涨，一夜财富自由",score:1},{text:"自己做的副业突然爆火，接单接到手软",score:2},{text:"突然有个大佬看中我的才华，给我投了几百万",score:3}]},
+        { id: 4, text: "看到朋友圈有人晒“睡后收入”截图，你的态度是？", options: [{text:"肯定是P的，专门割韭菜",score:0},{text:"默默点个赞，心里酸溜溜的",score:1},{text:"私聊问他怎么做的，付费求带",score:2},{text:"立刻去查这个赛道的底层逻辑，准备复刻",score:3}]},
+        { id: 5, text: "面对视频网站15块钱的会员，你会？", options: [{text:"到处借朋友的账号，或者找免费资源",score:0},{text:"咬牙充一个月，到期立刻关掉自动续费",score:1},{text:"直接充年费，因为看广告浪费生命",score:2},{text:"15块钱？我直接买个服务器自己搭建",score:3}]},
+        { id: 6, text: "你的消费观更像哪种？", options: [{text:"拼多多资深砍一刀玩家，能省一毛是一毛",score:0},{text:"追求极致性价比，平替才是王道",score:1},{text:"花钱买时间，外卖、跑腿绝不手软",score:2},{text:"花钱买认知、买圈子，请大佬吃饭不眨眼",score:3}]},
+        { id: 7, text: "你在网上买课/买资料的态度是？", options: [{text:"从来不买，B站大学免费学",score:0},{text:"买过，但基本放在网盘里吃灰",score:1},{text:"会买，但必须听完并且马上实操",score:2},{text:"只买贵的、有圈子的，因为买的是人脉和信息差",score:3}]},
+        { id: 8, text: "如果今天点外卖发现配送费涨了2块钱，你会？", options: [{text:"立刻换一家，或者下楼吃",score:0},{text:"骂骂咧咧地付款，但心里很不爽",score:1},{text:"无所谓，2块钱买我的时间，值",score:2},{text:"直接办个美团/饿了么会员，把配送费红包用到极致",score:3}]},
+        { id: 9, text: "微信上很久没联系的同学突然发“在吗”，你猜？", options: [{text:"肯定是来借钱的，装死",score:0},{text:"可能是要结婚了，准备好份子钱",score:1},{text:"也许是有业务合作？聊聊看",score:2},{text:"生意来了，立刻秒回并准备好商业方案",score:3}]},
+        { id: 10, text: "你在行业饭局上的状态是？", options: [{text:"埋头干饭，祈祷别点到我发言",score:0},{text:"偶尔附和两句，主要听大佬吹牛",score:1},{text:"积极加微信，拓展人脉",score:2},{text:"掌控全场，成为资源对接的“超级节点”",score:3}]},
+        { id: 11, text: "加了一个行业大佬的微信，你接下来会？", options: [{text:"就放着，偶尔看看他的朋友圈",score:0},{text:"逢年过节发个祝福，刷刷存在感",score:1},{text:"认真研究他的需求，看有没有能帮上忙的地方",score:2},{text:"直接带着方案和诚意去拜访，谈合作",score:3}]},
+        { id: 12, text: "朋友找你帮忙做点设计/写个文案，但没提钱，你会？", options: [{text:"免费帮忙，就当交个朋友",score:0},{text:"心里不爽，但还是硬着头皮做完",score:1},{text:"半开玩笑地说“我这可是收费的哦”，看对方反应",score:2},{text:"直接报个友情价，并顺势推销自己的业务",score:3}]},
+        { id: 13, text: "你发现了一个绝佳的副业点子，接下来你会？", options: [{text:"收藏起来，等周末再说",score:0},{text:"在脑子里演练了一百遍，但迟迟没动手",score:1},{text:"花两个小时做个简单的方案，先跑起来",score:2},{text:"今晚熬夜也要把第一版搞出来，明天就上线测试",score:3}]},
+        { id: 14, text: "你的“搞钱计划”通常败在哪里？", options: [{text:"败在第一步：还没开始",score:0},{text:"败在完美主义：总觉得准备不够充分",score:1},{text:"败在时间管理：主业太忙，没精力",score:2},{text:"败在太激进：步子太大扯着蛋",score:3}]},
+        { id: 15, text: "你打算做小红书/抖音搞钱，你的第一步是？", options: [{text:"想了半年，连账号都没注册",score:0},{text:"先买齐了补光灯、麦克风，但没发过一条",score:1},{text:"直接用手机拍了第一条，画质很渣但发了",score:2},{text:"拆解了100个对标账号，第一天就发了3条",score:3}]},
+        { id: 16, text: "面对“班味”极重的工作，你的真实状态是？", options: [{text:"每天摸鱼，能混一天是一天",score:0},{text:"抱怨但不敢辞职，怕断缴社保",score:1},{text:"利用上班摸鱼的时间，偷偷学搞钱技能",score:2},{text:"主业敷衍，副业全力以赴，随时准备炒老板鱿鱼",score:3}]},
+        { id: 17, text: "当所有人都在讨论“AIGC”或“某只股票”时，你会？", options: [{text:"关我屁事，我只关心今天中午吃什么",score:0},{text:"听听热闹，但不参与",score:1},{text:"赶紧去查资料，看看有没有红利可以蹭",score:2},{text:"寻找卖铲子的人，或者做空这波情绪",score:3}]},
+        { id: 18, text: "你平时获取“搞钱信息”的途径是？", options: [{text:"微博热搜和抖音推荐",score:0},{text:"几个高质量的行业公众号",score:1},{text:"各种付费知识星球和搞钱社群",score:2},{text:"线下的老板饭局和一手信息源",score:3}]},
+        { id: 19, text: "看到一个“0成本月入过万”的项目，你的第一反应是？", options: [{text:"骗子，直接划走",score:0},{text:"收藏了，但不敢试",score:1},{text:"去查它的盈利模式，分析它是不是割韭菜",score:2},{text:"立刻找漏洞，看能不能白嫖它的流量或模式",score:3}]},
+        { id: 20, text: "你如何看待“信息差”？", options: [{text:"现在互联网这么发达，哪有什么信息差",score:0},{text:"知道有信息差，但不知道去哪里找",score:1},{text:"信息差就是钱，我平时会刻意去搜集",score:2},{text:"我就是制造信息差的人，降维打击才是暴利",score:3}]},
+        { id: 21, text: "如果你投资的基金/项目亏了30%，你会？", options: [{text:"卸载软件，再也不看",score:0},{text:"装死，只要我不卖我就没亏",score:1},{text:"复盘数据，如果是好资产就继续补仓",score:2},{text:"立刻割肉止损，当交学费，寻找下一个目标",score:3}]},
+        { id: 22, text: "看到同龄人突然暴富，你的精神状态是？", options: [{text:"嫉妒，觉得他肯定是靠运气/家里",score:0},{text:"焦虑，晚上睡不着，感叹自己的平庸",score:1},{text:"羡慕，然后去拆解他的商业模式，看能否复制",score:2},{text:"兴奋，说明这个赛道跑得通，我也要下场",score:3}]},
+        { id: 23, text: "你花了几千块买的课，发现根本没用，你会？", options: [{text:"觉得自己被骗了，到处发帖避雷",score:0},{text:"自认倒霉，就当花钱买个教训",score:1},{text:"找客服退款，或者把课程转卖给其他人",score:2},{text:"提炼出课程里哪怕1%有用的东西，去实操赚回学费",score:3}]},
+        { id: 24, text: "如果明天你被裁员了，你的第一反应是？", options: [{text:"天塌了，赶紧写简历找工作",score:0},{text:"迷茫，先休息两个月再说",score:1},{text:"算算赔偿金够活几个月，趁机启动一直想做的副业",score:2},{text:"太好了！终于有理由全职搞钱了，早就受够了",score:3}]}
+    ];
+
+    const resultsData = [
+        { min: 0, max: 15, data: { id: 'cyber_beast', title: '赛博貔貅', emoji: '🦄', desc: '只进不出，极致抠门。你的钱只在银行卡里沉睡，任何风险投资在你眼里都是骗局。你最大的搞钱方式是——“省”。', blind: '通胀吞噬机。你以为存钱是安全，其实是在被通胀慢慢吸血。', cure: '心理账户理论。拿出5%的钱，去买张刮刮乐，或者请比你厉害的人喝杯咖啡，打破“死水”状态。', quote: '钱不是花掉了，只是换了一种方式陪在我身边——但我选择让它一直陪着我。' } },
+        { min: 16, max: 27, data: { id: 'mental_capitalist', title: '精神资本家', emoji: '📈', desc: '脑子里的商业版图比马云还大，指点江山头头是道，但一看余额，连买个煎饼果子都要犹豫加不加肠。', blind: '用思考代替行动。典型的“晚上想想千条路，早上起来走原路”。', cure: '克服完美主义。立刻关掉知乎/小红书，去把那个你收藏了半年的项目发一个朋友圈试试水。', quote: '只要我不开始，我的商业帝国就永远不会破产。' } },
+        { min: 28, max: 39, data: { id: 'money_sea_king', title: '搞钱海王', emoji: '🌊', desc: '什么风口都想蹭。今天摆摊卖淀粉肠，明天去写网文，后天去学Python。到处撒网，往往一无所获。', blind: '缺乏长期主义，捡了芝麻丢了西瓜。', cure: '机会成本与沉没成本。砍掉90%的副业，只聚焦一个领域深耕3个月。', quote: '只要我网撒得够多，就一定能捞到鱼——结果发现自己只是海里的饵料。' } },
+        { min: 40, max: 49, data: { id: 'destined_worker', title: '天命打工人', emoji: '🐂', desc: '公司的稳定基石，勤勤恳恳，任劳任怨。你的搞钱方式就是“涨薪”和“年终奖”。', blind: '线性收入陷阱。手停口停，极度缺乏“资产性收入”。', cure: '老鼠赛跑陷阱（《富爸爸穷爸爸》）。每天抽1小时学习一个能产生“睡后收入”的技能。', quote: '我的精神状态很稳定，稳定地给老板赚钱。' } },
+        { min: 50, max: 58, data: { id: 'mystic_rich', title: '玄学暴富党', emoji: '🔮', desc: '塔罗牌、星座运程、转运锦鲤是你的精神支柱。搞钱主要靠运气和老天爷赏饭吃。', blind: '迷信幸存者偏差。过度依赖外部运气，而忽略了底层逻辑。', cure: '斯金纳的迷信鸽子实验。把买彩票/算命的时间，用来研究一份真实的行业财报。', quote: '玄学搞钱，科学花掉，主打一个听天由命。' } },
+        { min: 59, max: 65, data: { id: 'social_printer', title: '社交印钞机', emoji: '🦸', desc: '人脉圈里的超级节点。擅长察言观色，靠“信息差”和“人情世故”赚钱。', blind: '过度依赖人情关系。一旦人脉链断裂，收入就会枯竭。', cure: '弱关系理论。不要只做中间商，要打造自己的产品/IP，让资源主动来找你。', quote: '在这个社会，你不认识人，钱就不认识你。' } },
+        { min: 66, max: 71, data: { id: 'tech_hermit', title: '隐世技术宅', emoji: '💻', desc: '极度厌恶无效社交，相信“手艺在身，走遍天下”。沉浸在代码、设计或硬核技能中。', blind: '技术自嗨。总想把产品做到100分再拿出来，但市场只需要60分。不懂营销。', cure: '人力资本价值。学会把技能“产品化”，哪怕做个小账号展示作品，都能让收入翻倍。', quote: '只要我的技术足够硬，资本就剥削不到我——但我还是买不起房。' } },
+        { min: 72, max: 72, data: { id: 'reverse_wolf', title: '逆向孤狼', emoji: '🧙‍♂️', desc: '天生反骨，所有人考公时下海，所有人买基金时清仓。赚的是“逆向”的钱。', blind: '孤独与自我怀疑。很难找到同频的合伙人。', cure: '蓝海战略。保持独立思考，但也要学会适度拥抱主流资源。', quote: '人多的地方不要去，钱也一样。' } }
+    ];
+
+    let currentIndex = 0;
+    let answers = {};
+    let currentResult = null;
+
+    function switchScreen(screenId) {
+        ['screen-password', 'screen-quiz', 'screen-result'].forEach(id => {
+            document.getElementById(id).classList.add('hidden');
+        });
+        document.getElementById(screenId).classList.remove('hidden');
+        window.scrollTo(0, 0);
+    }
+
+    // ================= 密码验证逻辑 (优先调用 Supabase，如未配置则回退本地测试) =================
+    async function handleLogin() {
+        const input = document.getElementById('password-input').value.trim().toUpperCase();
+        const errorEl = document.getElementById('password-error');
+        const btn = document.getElementById('btn-login');
+
+        if (!input) {
+            errorEl.textContent = '请输入密码';
+            errorEl.classList.remove('hidden');
+            return;
+        }
+
+        // 如果 Supabase 未配置，使用本地测试模式
+        if (!supabaseClient) {
+            if (input === 'GQ-TEST-001' || input === 'GQ-TEST-002' || input === 'GQ-TEST-003') {
+                errorEl.classList.add('hidden');
+                switchScreen('screen-quiz');
+                renderQuestion();
+                return;
+            } else {
+                errorEl.textContent = '本地测试模式：请输入 GQ-TEST-001';
+                errorEl.classList.remove('hidden');
+                return;
+            }
+        }
+
+        // 调用 Supabase Edge Function 验证密码
+        btn.textContent = '验证中...';
+        btn.disabled = true;
+        
+        try {
+            const { data, error } = await supabaseClient.functions.invoke('verify-password', {
+                body: { password_code: input }
+            });
+
+            if (error || !data.valid) {
+                errorEl.textContent = data?.message || '密码无效或次数已用完';
+                errorEl.classList.remove('hidden');
+            } else {
+                errorEl.classList.add('hidden');
+                document.getElementById('password-input').value = '';
+                switchScreen('screen-quiz');
+                renderQuestion();
+            }
+        } catch (err) {
+            errorEl.textContent = '网络连接失败，请稍后重试';
+            errorEl.classList.remove('hidden');
+        } finally {
+            btn.textContent = '开始测评';
+            btn.disabled = false;
+        }
+    }
+
+    // ================= 答题逻辑 =================
+    function renderQuestion() {
+        const q = questions[currentIndex];
+        const container = document.getElementById('question-container');
+        const progress = ((currentIndex + 1) / questions.length) * 100;
+        
+        document.getElementById('progress-text').textContent = `进度 ${currentIndex + 1} / ${questions.length}`;
+        document.getElementById('progress-percent').textContent = `${Math.round(progress)}%`;
+        document.getElementById('progress-bar').style.width = `${progress}%`;
+
+        let html = `<h2 class="text-xl font-bold text-gray-800 mb-8 leading-relaxed">${q.text}</h2><div class="space-y-4">`;
+        q.options.forEach((opt) => {
+            const isSelected = answers[q.id] === opt.score;
+            const selectedClass = isSelected ? 'border-orange-500 bg-orange-50 text-orange-700 font-medium' : 'border-gray-100 bg-white text-gray-600 hover:border-gray-200';
+            html += `<button onclick="selectOption(${q.id}, ${opt.score})" class="w-full text-left p-4 rounded-xl border-2 transition-all duration-200 ${selectedClass}">${opt.text}</button>`;
+        });
+        html += `</div>`;
+        container.innerHTML = html;
+
+        document.getElementById('btn-prev').style.visibility = currentIndex === 0 ? 'hidden' : 'visible';
+        const btnNext = document.getElementById('btn-next');
+        if (answers[q.id] !== undefined) {
+            btnNext.disabled = false;
+            btnNext.className = 'px-8 py-3 rounded-xl font-bold text-white shadow-lg bg-orange-500 shadow-orange-200 active:scale-95 transition-all';
+        } else {
+            btnNext.disabled = true;
+            btnNext.className = 'px-8 py-3 rounded-xl font-bold text-white bg-gray-300 shadow-none transition-all';
+        }
+        btnNext.textContent = currentIndex === questions.length - 1 ? '查看结果' : '下一题';
+        container.classList.remove('fade-in');
+        void container.offsetWidth;
+        container.classList.add('fade-in');
+    }
+
+    function selectOption(qId, score) {
+        answers[qId] = score;
+        renderQuestion();
+    }
+
+    function prevQuestion() {
+        if (currentIndex > 0) { currentIndex--; renderQuestion(); }
+    }
+
+    async function nextQuestion() {
+        if (currentIndex < questions.length - 1) {
+            currentIndex++;
+            renderQuestion();
+        } else {
+            await calculateResult();
+        }
+    }
+
+    // ================= 结果计算与上报 =================
+    async function calculateResult() {
+        const totalScore = Object.values(answers).reduce((a, b) => a + b, 0);
+        currentResult = resultsData.find(r => totalScore >= r.min && totalScore <= r.max).data;
+        
+        document.getElementById('result-emoji').textContent = currentResult.emoji;
+        document.getElementById('result-title').textContent = `确诊：${currentResult.title}`;
+        document.getElementById('result-desc').textContent = currentResult.desc;
+        document.getElementById('result-blind').textContent = currentResult.blind;
+        document.getElementById('result-cure').textContent = currentResult.cure;
+        document.getElementById('result-quote').textContent = `“${currentResult.quote}”`;
+
+        // 如果 Supabase 已配置，将结果上传到数据库
+        if (supabaseClient) {
+            try {
+                await supabaseClient.from('results').insert({
+                    password_code: document.getElementById('password-input').value || 'UNKNOWN',
+                    personality_type: currentResult.id,
+                    personality_title: currentResult.title,
+                    total_score: totalScore
+                });
+            } catch (e) {
+                console.warn('结果上传失败（不影响用户体验）:', e);
+            }
+        }
+
+        switchScreen('screen-result');
+    }
+
+    // ================= 结果页操作 =================
+    function saveImage() {
+        const card = document.getElementById('result-card');
+        html2canvas(card, { scale: 2, useCORS: true, backgroundColor: '#ffffff' }).then(canvas => {
+            const link = document.createElement('a');
+            link.download = `搞钱人格_${currentResult.title}.png`;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        }).catch(() => alert('生成图片失败，请直接截图保存'));
+    }
+
+    function copyLink() {
+        // 由于没有真正保存到服务器，这里直接分享当前页面地址
+        const shareUrl = window.location.origin + window.location.pathname + `?result=${currentResult.id}`;
+        navigator.clipboard.writeText(shareUrl).then(() => {
+            const btn = document.getElementById('btn-copy');
+            const oldText = btn.innerHTML;
+            btn.innerHTML = '✅ 已复制链接';
+            setTimeout(() => btn.innerHTML = oldText, 2000);
+        }).catch(() => prompt('请手动复制以下链接：', shareUrl));
+    }
+
+    function restartQuiz() {
+        currentIndex = 0; answers = {}; currentResult = null;
+        switchScreen('screen-quiz'); renderQuestion();
+    }
+
+    function showReview() { document.getElementById('modal-review').classList.remove('hidden'); }
+    function hideReview() { document.getElementById('modal-review').classList.add('hidden'); }
+
+    // ================= 初始化 =================
+    window.onload = function() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const sharedResultId = urlParams.get('result');
+        if (sharedResultId) {
+            const sharedData = resultsData.find(r => r.data.id === sharedResultId);
+            if (sharedData) {
+                currentResult = sharedData.data;
+                document.getElementById('result-emoji').textContent = currentResult.emoji;
+                document.getElementById('result-title').textContent = `确诊：${currentResult.title}`;
+                document.getElementById('result-desc').textContent = currentResult.desc;
+                document.getElementById('result-blind').textContent = currentResult.blind;
+                document.getElementById('result-cure').textContent = currentResult.cure;
+                document.getElementById('result-quote').textContent = `“${currentResult.quote}”`;
+                switchScreen('screen-result');
+                return;
+            }
+        }
+        switchScreen('screen-password');
+    };
+</script>
+</body>
+</html>
