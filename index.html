@@ -19,15 +19,15 @@ head>
 <body>body>
 
 div id="app" class="app-container">
-    <!-- 1. 密码页 -->
+       <!-- 1. 密码页 -->
     <div id="screen-password" class="flex flex-col items-center justify-center min-h-screen p-6 bg-gradient-to-b from-orange-50 to-white">
-        💰<div class="text-6xl mb-6">💰</div>
-        搞钱人格测试<h1 id="app-title" class="text-2xl font-bold text-gray-800 mb-2">搞钱人格测试</h1>
-        请输入专属测试密码开始（每个密码限测3次）p class="text-gray-500 mb-8 text-sm">Please enter your exclusive test password to begin (each password is limited to 3 tests)</p>
+        <div class="text-6xl mb-6">💰</div>
+        <h1 id="app-title" class="text-2xl font-bold text-gray-800 mb-2">搞钱人格测试</h1>
+        <p class="text-gray-500 mb-8 text-sm">请输入专属测试密码开始（每个密码限测3次）</p>
         <div class="w-full space-y-4">
-            <input type="password" id="password-input" placeholder="Enter password (e.g., GQ-XXXX-XXX)" class"w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-500 text-center text-lg tracking-widest">
+            <input type="password" id="password-input" placeholder="请输入密码 (如 GQ-XXXX-XXX)" class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-500 text-center text-lg tracking-widest">
             <p id="password-error" class="text-red-500 text-sm text-center hidden"></p>
-            开始测评<button onclick="handleLogin()" id="btn-login" class="w-full bg-orange-500 text-white py-3 rounded-xl font-bold shadow-lg shadow-orange-200 active:scale-95 transition-transform">开始测评</button>
+            <button onclick="handleLogin()" id="btn-login" class="w-full bg-orange-500 text-white py-3 rounded-xl font-bold shadow-lg shadow-orange-200 active:scale-95 transition-transform">开始测评</button>
         </div>
     </div>
 
