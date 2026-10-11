@@ -6,37 +6,37 @@
     <title>搞钱人格与财富自由捷径测试</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    <!-- 引入 Supabase SDK -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        body { background-color: #f3f4f6; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; -webkit-tap-highlight-color: transparent; }body{ background-color: #f3f4f6; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; -webkit-tap-highlight-color: transparent; }
-        .app-container { 最大宽度: 480px; 居中: 0 auto; 最小高度: 100vh; 背景色: 白色; 阴影: 0 10px 25px rgba(0,0,0,0.1); 定位: 相对; 水平溢出: 隐藏; }app-container { max-width: 480px; margin: 0 auto; min-height: 100vh; background: white; box-shadow: 0 10px 25px rgba(0,0,0,0.1); position: relative; overflow-x: hidden; }
-        .fade-in { animation: fadeIn 0.3s ease-in-out; }fade-in { animation: fadeIn 0.3s ease-in-out; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        #app-title { touch-action: manipulation; }app-title{ touch-action: manipulation; }
+        body { background-color: #f3f4f6; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; -webkit-tap-highlight-color: transparent; }
+        .app-container { max-width: 480px; margin: 0 auto; min-height: 100vh; background: white; box-shadow: 0 10px 25px rgba(0,0,0,0.1); position: relative; overflow-x: hidden; }
+        .fade-in { animation: fadeIn 0.3s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        #app-title, .admin-trigger { touch-action: manipulation; }
     </style>
-head>
-<body>body>
+</head>
+<body>
 
-div id="app" class="app-container">
-       <!-- 1. 密码页 -->
+<div id="app" class="app-container">
+    <!-- 1. 密码页 -->
     <div id="screen-password" class="flex flex-col items-center justify-center min-h-screen p-6 bg-gradient-to-b from-orange-50 to-white">
         <div class="text-6xl mb-6">💰</div>
-        <h1 id="app-title" class="text-2xl font-bold text-gray-800 mb-2">搞钱人格测试</h1>
+        <h1 id="app-title" class="text-2xl font-bold text-gray-800 mb-2 cursor-pointer select-none">搞钱人格测试</h1>
         <p class="text-gray-500 mb-8 text-sm">请输入专属测试密码开始（每个密码限测3次）</p>
         <div class="w-full space-y-4">
             <input type="password" id="password-input" placeholder="请输入密码 (如 GQ-XXXX-XXX)" class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-500 text-center text-lg tracking-widest">
             <p id="password-error" class="text-red-500 text-sm text-center hidden"></p>
             <button onclick="handleLogin()" id="btn-login" class="w-full bg-orange-500 text-white py-3 rounded-xl font-bold shadow-lg shadow-orange-200 active:scale-95 transition-transform">开始测评</button>
         </div>
+        <p class="admin-trigger text-xs text-gray-300 mt-12 cursor-pointer select-none underline">遇到问题？联系客服</p>
     </div>
 
-    
+    <!-- 2. 答题页 -->
     <div id="screen-quiz" class="hidden flex flex-col h-screen">
         <div class="p-4 bg-white border-b border-gray-100">
             <div class="flex items-center justify-between mb-2">
-                进度 1 / 24="progress-text" class="text-sm text-gray-400">进度 1 / 24</span>
-                4%<span id="progress-percent" class="text-sm font-medium text-orange-500">4%</span>
+                <span id="progress-text" class="text-sm text-gray-400">进度 1 / 24</span>
+                <span id="progress-percent" class="text-sm font-medium text-orange-500">4%</span>
             </div>
             <div class="w-full bg-gray-100 rounded-full h-2">
                 <div id="progress-bar" class="bg-orange-500 h-2 rounded-full transition-all duration-300" style="width: 4%"></div>
@@ -44,8 +44,8 @@ div id="app" class="app-container">
         </div>
         <div class="flex-1 p-6 overflow-y-auto fade-in" id="question-container"></div>
         <div class="p-4 bg-white border-t border-gray-100 flex justify-between">
-            上一题<buttononclick="prevQuestion()" id="btn-prev" class="flex items-center px-4 py-3 rounded-xl font-medium text-gray-600 bg-gray-50">上一题</button>
-            下一题<button onclick="nextQuestion()" id="btn-next" class="px-8 py-3 rounded-xl font-bold text-white bg-gray-300 shadow-none transition-all" disabled>下一题</button>
+            <button onclick="prevQuestion()" id="btn-prev" class="flex items-center px-4 py-3 rounded-xl font-medium text-gray-600 bg-gray-50">上一题</button>
+            <button onclick="nextQuestion()" id="btn-next" class="px-8 py-3 rounded-xl font-bold text-white bg-gray-300 shadow-none transition-all" disabled>下一题</button>
         </div>
     </div>
 
@@ -56,19 +56,19 @@ div id="app" class="app-container">
                 <div class="text-center mb-6">
                     <div id="result-emoji" class="text-6xl mb-4"></div>
                     <h1 id="result-title" class="text-2xl font-black text-gray-800 mb-2"></h1>
-                    你的搞钱人格诊断书<p class"text-sm text-gray-400">你的搞钱人格诊断书</p>
+                    <p class="text-sm text-gray-400">你的搞钱人格诊断书</p>
                 </div>
                 <div class="space-y-4">
                     <div class="bg-orange-50 p-4 rounded-xl">
-                        🧬 人格画像<h3 class="text-orange-800 font-bold mb-1">🧬 人格画像</h3>
+                        <h3 class="text-orange-800 font-bold mb-1">🧬 人格画像</h3>
                         <p id="result-desc" class="text-orange-700 text-sm leading-relaxed"></p>
                     </div>
                     <div class="bg-red-50 p-4 rounded-xl">
-                        ⚠️ 财富盲区<h3 class"text-red-800 font-bold mb-1">⚠️ 财富盲区</h3>
+                        <h3 class="text-red-800 font-bold mb-1">⚠️ 财富盲区</h3>
                         <p id="result-blind" class="text-red-700 text-sm leading-relaxed"></p>
                     </div>
                     <div class="bg-green-50 p-4 rounded-xl">
-                        💊 搞钱解药<h3 class="text-green-800 font-bold mb-1">💊 搞钱解药</h3>
+                        <h3 class="text-green-800 font-bold mb-1">💊 搞钱解药</h3>
                         <p id="result-cure" class="text-green-700 text-sm leading-relaxed"></p>
                     </div>
                     <div class="bg-gray-800 p-4 rounded-xl text-center">
@@ -103,11 +103,9 @@ div id="app" class="app-container">
 
 <script>
     // ================= Supabase 配置 =================
-    // 请在这里填入你的 Supabase 项目 URL 和 anon key
-    const SUPABASE_URL = 'https://jzwrdjnqcyprjnoodrw.supabase.co'; 
-    const SUPABASE_ANON_KEY = 'sb_publishable_-DvPhKkolv17dc09t0T38A_zNXK85P_';const SUPABASE_ANON_KEY = 'sb_publishable_-DvPhKkolv17dc09t0T38A_zNXK85P_'; 
+    const SUPABASE_URL = 'https://jzwrdjnqycyprjnoodrw.supabase.co'; 
+    const SUPABASE_ANON_KEY = 'sb_publishable_-DvPhKkolv17dc09t0T38A_zNXK85P_'; 
     
-    // 初始化 Supabase 客户端
     const supabaseClient = (SUPABASE_URL !== 'YOUR_SUPABASE_URL') 
         ? supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) 
         : null;
@@ -163,7 +161,6 @@ div id="app" class="app-container">
         window.scrollTo(0, 0);
     }
 
-    // ================= 密码验证逻辑 (优先调用 Supabase，如未配置则回退本地测试) =================
     async function handleLogin() {
         const input = document.getElementById('password-input').value.trim().toUpperCase();
         const errorEl = document.getElementById('password-error');
@@ -175,21 +172,12 @@ div id="app" class="app-container">
             return;
         }
 
-        // 如果 Supabase 未配置，使用本地测试模式
         if (!supabaseClient) {
-            if (input === 'GQ-TEST-001' || input === 'GQ-TEST-002' || input === 'GQ-TEST-003') {
-                errorEl.classList.add('hidden');
-                switchScreen('screen-quiz');
-                renderQuestion();
-                return;
-            } else {
-                errorEl.textContent = '本地测试模式：请输入 GQ-TEST-001';
-                errorEl.classList.remove('hidden');
-                return;
-            }
+            errorEl.textContent = 'Supabase 未配置，请检查代码';
+            errorEl.classList.remove('hidden');
+            return;
         }
 
-        // 调用 Supabase Edge Function 验证密码
         btn.textContent = '验证中...';
         btn.disabled = true;
         
@@ -216,7 +204,6 @@ div id="app" class="app-container">
         }
     }
 
-    // ================= 答题逻辑 =================
     function renderQuestion() {
         const q = questions[currentIndex];
         const container = document.getElementById('question-container');
@@ -268,7 +255,6 @@ div id="app" class="app-container">
         }
     }
 
-    // ================= 结果计算与上报 =================
     async function calculateResult() {
         const totalScore = Object.values(answers).reduce((a, b) => a + b, 0);
         currentResult = resultsData.find(r => totalScore >= r.min && totalScore <= r.max).data;
@@ -280,7 +266,6 @@ div id="app" class="app-container">
         document.getElementById('result-cure').textContent = currentResult.cure;
         document.getElementById('result-quote').textContent = `“${currentResult.quote}”`;
 
-        // 如果 Supabase 已配置，将结果上传到数据库
         if (supabaseClient) {
             try {
                 await supabaseClient.from('results').insert({
@@ -290,14 +275,13 @@ div id="app" class="app-container">
                     total_score: totalScore
                 });
             } catch (e) {
-                console.warn('结果上传失败（不影响用户体验）:', e);
+                console.warn('结果上传失败:', e);
             }
         }
 
         switchScreen('screen-result');
     }
 
-    // ================= 结果页操作 =================
     function saveImage() {
         const card = document.getElementById('result-card');
         html2canvas(card, { scale: 2, useCORS: true, backgroundColor: '#ffffff' }).then(canvas => {
@@ -309,7 +293,6 @@ div id="app" class="app-container">
     }
 
     function copyLink() {
-        // 由于没有真正保存到服务器，这里直接分享当前页面地址
         const shareUrl = window.location.origin + window.location.pathname + `?result=${currentResult.id}`;
         navigator.clipboard.writeText(shareUrl).then(() => {
             const btn = document.getElementById('btn-copy');
@@ -327,7 +310,6 @@ div id="app" class="app-container">
     function showReview() { document.getElementById('modal-review').classList.remove('hidden'); }
     function hideReview() { document.getElementById('modal-review').classList.add('hidden'); }
 
-    // ================= 初始化 =================
     window.onload = function() {
         const urlParams = new URLSearchParams(window.location.search);
         const sharedResultId = urlParams.get('result');
