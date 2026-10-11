@@ -11,7 +11,7 @@
         .app-container { max-width: 480px; margin: 0 auto; min-height: 100vh; background: white; box-shadow: 0 10px 25px rgba(0,0,0,0.1); position: relative; overflow-x: hidden; }
         .fade-in { animation: fadeIn 0.3s ease-in-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        #app-title, .admin-trigger { touch-action: manipulation; }
+        #app-title { touch-action: manipulation; }
     </style>
 </head>
 <body>
@@ -20,14 +20,13 @@
     <!-- 1. 密码页 -->
     <div id="screen-password" class="flex flex-col items-center justify-center min-h-screen p-6 bg-gradient-to-b from-orange-50 to-white">
         <div class="text-6xl mb-6">💰</div>
-        <h1 id="app-title" class="text-2xl font-bold text-gray-800 mb-2 cursor-pointer select-none">搞钱人格测试</h1>
+        <h1 id="app-title" class="text-2xl font-bold text-gray-800 mb-2">搞钱人格测试</h1>
         <p class="text-gray-500 mb-8 text-sm">请输入专属测试密码开始（每个密码限测3次）</p>
         <div class="w-full space-y-4">
             <input type="password" id="password-input" placeholder="请输入密码 (如 GQ-XXXX-XXX)" class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-500 text-center text-lg tracking-widest">
             <p id="password-error" class="text-red-500 text-sm text-center hidden"></p>
             <button onclick="handleLogin()" id="btn-login" class="w-full bg-orange-500 text-white py-3 rounded-xl font-bold shadow-lg shadow-orange-200 active:scale-95 transition-transform">开始测评</button>
         </div>
-        <p class="admin-trigger text-xs text-gray-300 mt-12 cursor-pointer select-none underline">遇到问题？联系客服</p>
     </div>
 
     <!-- 2. 答题页 -->
@@ -101,10 +100,6 @@
 </div>
 
 <script>
-    // ================= 配置区 =================
-    const SUPABASE_URL = 'https://jzwrdjnqycyprjnoodrw.supabase.co'; 
-    const SUPABASE_ANON_KEY = 'sb_publishable_-DvPhKkolv17dc09t0T38A_zNXK85P_'; 
-
     // ================= 数据配置 =================
     const questions = [
         { id: 1, text: "路过彩票店，你的内心戏是？", options: [{text:"智商税，这钱不如买杯奶茶",score:0},{text:"花两块钱买注双色球，给生活买个希望",score:1},{text:"刮刮乐搞起，我就是天选之子",score:2},{text:"研究星座运势/塔罗牌，算算我今天的财运方位",score:3}]},
@@ -156,50 +151,40 @@
         window.scrollTo(0, 0);
     }
 
-    // ================= 原生 fetch 密码验证逻辑 =================
-    async function handleLogin() {
+    // ================= 纯本地密码验证（不再请求网络） =================
+    function handleLogin() {
         const input = document.getElementById('password-input').value.trim().toUpperCase();
         const errorEl = document.getElementById('password-error');
-        const btn = document.getElementById('btn-login');
 
-        if (!input) {
-            errorEl.textContent = '请输入密码';
+        // 1. 验证密码格式（GQ-开头，4位字母数字，-，3位字母数字）
+        const isValidFormat = /^GQ-[A-Z0-9]{4}-[A-Z0-9]{3}$/.test(input);
+        if (!isValidFormat) {
+            errorEl.textContent = '密码无效，请检查格式 (如 GQ-A2B4-9XK)';
             errorEl.classList.remove('hidden');
             return;
         }
 
-        btn.textContent = '验证中...';
-        btn.disabled = true;
-
+        // 2. 检查本地使用次数
+        let attempts = 0;
         try {
-            // 使用 fetch 直接调用 Edge Function
-            const response = await fetch(`${SUPABASE_URL}/functions/v1/verify-password`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
-                },
-                body: JSON.stringify({ password_code: input })
-            });
+            attempts = parseInt(localStorage.getItem(`pwd_${input}`) || '0');
+        } catch(e) {}
 
-            const data = await response.json();
-
-            if (!response.ok || !data.valid) {
-                errorEl.textContent = data.message || '密码无效或次数已用完';
-                errorEl.classList.remove('hidden');
-            } else {
-                errorEl.classList.add('hidden');
-                document.getElementById('password-input').value = '';
-                switchScreen('screen-quiz');
-                renderQuestion();
-            }
-        } catch (err) {
-            errorEl.textContent = '网络连接失败，请稍后重试';
+        if (attempts >= 3) {
+            errorEl.textContent = '该密码测试次数已用完，请联系客服获取新密码';
             errorEl.classList.remove('hidden');
-        } finally {
-            btn.textContent = '开始测评';
-            btn.disabled = false;
+            return;
         }
+
+        // 3. 扣除一次机会
+        try {
+            localStorage.setItem(`pwd_${input}`, attempts + 1);
+        } catch(e) {}
+
+        errorEl.classList.add('hidden');
+        document.getElementById('password-input').value = '';
+        switchScreen('screen-quiz');
+        renderQuestion();
     }
 
     // ================= 答题逻辑 =================
@@ -245,17 +230,16 @@
         if (currentIndex > 0) { currentIndex--; renderQuestion(); }
     }
 
-    async function nextQuestion() {
+    function nextQuestion() {
         if (currentIndex < questions.length - 1) {
             currentIndex++;
             renderQuestion();
         } else {
-            await calculateResult();
+            calculateResult();
         }
     }
 
-    // ================= 结果计算与上传 =================
-    async function calculateResult() {
+    function calculateResult() {
         const totalScore = Object.values(answers).reduce((a, b) => a + b, 0);
         currentResult = resultsData.find(r => totalScore >= r.min && totalScore <= r.max).data;
         
@@ -265,27 +249,6 @@
         document.getElementById('result-blind').textContent = currentResult.blind;
         document.getElementById('result-cure').textContent = currentResult.cure;
         document.getElementById('result-quote').textContent = `“${currentResult.quote}”`;
-
-        // 使用 fetch 直接将结果写入数据库
-        try {
-            await fetch(`${SUPABASE_URL}/rest/v1/results`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'apikey': SUPABASE_ANON_KEY,
-                    'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-                    'Prefer': 'return=minimal'
-                },
-                body: JSON.stringify({
-                    password_code: document.getElementById('password-input').value || 'UNKNOWN',
-                    personality_type: currentResult.id,
-                    personality_title: currentResult.title,
-                    total_score: totalScore
-                })
-            });
-        } catch (e) {
-            console.warn('结果上传失败（不影响用户体验）:', e);
-        }
 
         switchScreen('screen-result');
     }
